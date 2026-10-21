@@ -3,4 +3,3 @@ zig-out/
 zig-pkg/
 *.o
 test/
-__pycache__/

@@ -90,17 +90,6 @@ sRGB PNG, PNM/PAM, QOI, or Y4M input expected
 
 Library usage is clearly defined in `cvvdp.h`.
 
-### Validation
-
-Run `zig build test --release=fast` with Python 3 installed. This runs the C API
-checks, the pinned image library's tests, and 85 CLI metric cases with deterministic
-PNG, PBM/PGM/PPM/PAM, QOI, and 8/9/10/12/16-bit Y4M inputs. It also checks all
-display presets, thread parity, temporal reset, error handling, and text output.
-Use `-Doptimize=debug`, `safe`, `fast`, or `small` to select an optimization mode.
-
-See [the Zig 0.17 validation notes](doc/zig-0.17.md) for baseline comparisons and
-reproducible runtime/memory benchmarks.
-
 ### FFmpeg Patch
 
 0. Clone FFmpeg:

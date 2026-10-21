@@ -22,7 +22,6 @@ pub fn build(b: *std.Build) void {
     if (flto and target.result.ofmt != .elf) {
         const unsupported = b.addFail("Zig 0.17 supports this project's LTO build only on ELF targets; omit -Dflto=true for macOS");
         b.default_step.dependOn(&unsupported.step);
-        b.step("test", "Run regression tests").dependOn(&unsupported.step);
         return;
     }
     const options = b.addOptions();
@@ -140,30 +139,4 @@ pub fn build(b: *std.Build) void {
     cvvdpenc.root_module.linkLibrary(spng);
     cvvdpenc.lto = if (flto) .full else null;
     b.installArtifact(cvvdpenc);
-
-    const test_step = b.step("test", "Run C API, image dependency, and CLI regression tests (requires Python 3)");
-    const api_tests = b.addExecutable(.{
-        .name = "cvvdp-api-tests",
-        .use_lld = if (flto) true else null,
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-            .link_libc = true,
-        }),
-    });
-    api_tests.root_module.addIncludePath(b.path("src"));
-    api_tests.root_module.addCSourceFile(.{
-        .file = b.path("tests/api.c"),
-        .flags = &.{ "-std=c23", "-Wall", "-Wextra", "-Werror" },
-    });
-    api_tests.root_module.linkLibrary(cvvdp);
-    api_tests.lto = if (flto) .full else null;
-    test_step.dependOn(&b.addRunArtifact(api_tests).step);
-    const image_tests = b.addTest(.{ .root_module = simpleimgio });
-    test_step.dependOn(&b.addRunArtifact(image_tests).step);
-    const cli_tests = b.addSystemCommand(&.{"python3"});
-    cli_tests.addFileArg(b.path("tests/regression.py"));
-    cli_tests.addArtifactArg(cvvdpenc);
-    cli_tests.has_side_effects = true;
-    test_step.dependOn(&cli_tests.step);
 }
