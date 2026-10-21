@@ -18,7 +18,13 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const strip = b.option(bool, "strip", "strip symbols from the binary, defaults to false") orelse false;
-    const flto = b.option(bool, "flto", "enable Link Time Optimization, defaults to false") orelse false;
+    const flto = b.option(bool, "flto", "enable Link Time Optimization on ELF targets, defaults to false") orelse false;
+    if (flto and target.result.ofmt != .elf) {
+        const unsupported = b.addFail("Zig 0.17 supports this project's LTO build only on ELF targets; omit -Dflto=true for macOS");
+        b.default_step.dependOn(&unsupported.step);
+        b.step("test", "Run regression tests").dependOn(&unsupported.step);
+        return;
+    }
     const options = b.addOptions();
 
     // simpleimgio
@@ -48,6 +54,7 @@ pub fn build(b: *std.Build) void {
     // 'libcvvdp.a' static lib
     const cvvdp = b.addLibrary(.{
         .name = "cvvdp",
+        .use_lld = if (flto) true else null,
         .root_module = b.createModule(.{
             .target = target,
             .optimize = optimize,
@@ -74,10 +81,31 @@ pub fn build(b: *std.Build) void {
     });
 
     if (target_result.cpu.arch == .x86_64) {
-        cvvdp.root_module.addCSourceFile(.{
+        // Compile the SIMD object with its own CPU features. Zig's target
+        // configuration takes precedence over per-file -mavx2/-mfma flags.
+        var avx2_query = target.query;
+        avx2_query.cpu_features_sub.removeFeature(@backingInt(std.Target.x86.Feature.avx2));
+        avx2_query.cpu_features_sub.removeFeature(@backingInt(std.Target.x86.Feature.fma));
+        avx2_query.cpu_features_add.addFeature(@backingInt(std.Target.x86.Feature.avx2));
+        avx2_query.cpu_features_add.addFeature(@backingInt(std.Target.x86.Feature.fma));
+        const avx2_module = b.createModule(.{
+            .target = b.resolveTargetQuery(avx2_query),
+            .optimize = optimize,
+            .link_libc = true,
+            .strip = strip,
+        });
+        avx2_module.addIncludePath(b.path("."));
+        avx2_module.addCSourceFile(.{
             .file = b.path("src/cvvdp_avx2.c"),
             .flags = &cvvdp_flags,
         });
+        const avx2 = b.addObject(.{
+            .name = "cvvdp-avx2",
+            .root_module = avx2_module,
+            .use_lld = if (flto) true else null,
+        });
+        avx2.lto = if (flto) .full else null;
+        cvvdp.root_module.addObject(avx2);
     } else if (target_result.cpu.arch == .aarch64) {
         cvvdp.root_module.addCSourceFile(.{
             .file = b.path("src/cvvdp_neon.c"),
@@ -102,6 +130,7 @@ pub fn build(b: *std.Build) void {
             .strip = strip,
         }),
         .use_llvm = true,
+        .use_lld = if (flto) true else null,
     });
     cvvdpenc.root_module.addOptions("build_opts", options);
     cvvdpenc.root_module.addImport("c", c_module);
@@ -109,5 +138,32 @@ pub fn build(b: *std.Build) void {
     cvvdpenc.root_module.addIncludePath(b.path("."));
     cvvdpenc.root_module.linkLibrary(cvvdp);
     cvvdpenc.root_module.linkLibrary(spng);
+    cvvdpenc.lto = if (flto) .full else null;
     b.installArtifact(cvvdpenc);
+
+    const test_step = b.step("test", "Run C API, image dependency, and CLI regression tests (requires Python 3)");
+    const api_tests = b.addExecutable(.{
+        .name = "cvvdp-api-tests",
+        .use_lld = if (flto) true else null,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        }),
+    });
+    api_tests.root_module.addIncludePath(b.path("src"));
+    api_tests.root_module.addCSourceFile(.{
+        .file = b.path("tests/api.c"),
+        .flags = &.{ "-std=c23", "-Wall", "-Wextra", "-Werror" },
+    });
+    api_tests.root_module.linkLibrary(cvvdp);
+    api_tests.lto = if (flto) .full else null;
+    test_step.dependOn(&b.addRunArtifact(api_tests).step);
+    const image_tests = b.addTest(.{ .root_module = simpleimgio });
+    test_step.dependOn(&b.addRunArtifact(image_tests).step);
+    const cli_tests = b.addSystemCommand(&.{"python3"});
+    cli_tests.addFileArg(b.path("tests/regression.py"));
+    cli_tests.addArtifactArg(cvvdpenc);
+    cli_tests.has_side_effects = true;
+    test_step.dependOn(&cli_tests.step);
 }

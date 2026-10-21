@@ -49,13 +49,13 @@ multiple threads, fcvvdp is over 221% faster than the reference implementation.
 
 Compilation requires:
 
-- [Zig](https://ziglang.org/) 0.16.x
+- [Zig](https://ziglang.org/) 0.17.x
 - macOS, Linux, or Unix-like operating system
 
 ### Binary
 
 0. Ensure all dependencies are installed
-1. Run `zig build --release=fast` (add `-Dflto=true` for FLTO)
+1. Run `zig build --release=fast` (add `-Dflto=true` for FLTO on ELF targets)
 2. Your `fcvvdp` binary will be in `zig-out/bin/`
 
 ```sh
@@ -84,11 +84,22 @@ sRGB PNG, PNM/PAM, QOI, or Y4M input expected
 ### Library
 
 0. Ensure all dependencies are installed
-1. Run `zig build --release=fast` (add `-Dflto=true` for FLTO)
+1. Run `zig build --release=fast` (add `-Dflto=true` for FLTO on ELF targets)
 2. The `libcvvdp` library will be in `zig-out/lib/`, alongside `cvvdp.h` in
    `zig-out/include/`.
 
 Library usage is clearly defined in `cvvdp.h`.
+
+### Validation
+
+Run `zig build test --release=fast` with Python 3 installed. This runs the C API
+checks, the pinned image library's tests, and 85 CLI metric cases with deterministic
+PNG, PBM/PGM/PPM/PAM, QOI, and 8/9/10/12/16-bit Y4M inputs. It also checks all
+display presets, thread parity, temporal reset, error handling, and text output.
+Use `-Doptimize=debug`, `safe`, `fast`, or `small` to select an optimization mode.
+
+See [the Zig 0.17 validation notes](doc/zig-0.17.md) for baseline comparisons and
+reproducible runtime/memory benchmarks.
 
 ### FFmpeg Patch
 

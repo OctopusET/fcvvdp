@@ -1,0 +1,39 @@
+name: Zig 0.17
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        optimize: [debug, safe, fast, small]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: zig fmt --check build.zig build.zig.zon src
+      - run: zig build -Doptimize=${{ matrix.optimize }} --summary all
+      - run: zig build test -Doptimize=${{ matrix.optimize }} --summary all
+
+  lto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: zig build test --release=fast -Dflto=true --summary all
