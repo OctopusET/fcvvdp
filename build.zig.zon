@@ -3,8 +3,8 @@
     .version = "0.4.1",
     .dependencies = .{
         .spng = .{
-            .url = "git+https://github.com/gianni-rosato/libspng.git#107d133ef4fa649b236fdb920b113f9c92615c16",
-            .hash = "spng-0.0.2-T166cFckAADyxclwh-9Onmk2UG9mQz5IMoxiFN2VCk7I",
+            .url = "git+https://github.com/gianni-rosato/libspng.git#c459a577fe818f4dfdb3ceaea46b702bd8c9d118",
+            .hash = "spng-0.0.2-T166cHISAADR33WgZ6IfHBVOPj0gwjyqnxYxc-XTWF8Z",
         },
         .simpleimgio = .{
             .url = "git+https://github.com/gianni-rosato/simpleimgio.git#98473d19f243eefd4ef29a2149af47bc072c2484",
