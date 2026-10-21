@@ -1,17 +1,3 @@
-// Copyright © 2026, Halide Compression, LLC.
-// All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at:
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
@@ -26,14 +12,12 @@ pub fn build(b: *std.Build) void {
     }
     const options = b.addOptions();
 
-    // simpleimgio
     const simpleimgio_dep = b.dependency("simpleimgio", .{
         .target = target,
         .optimize = optimize,
     });
     const simpleimgio = simpleimgio_dep.module("simpleimgio");
 
-    // libspng
     const spng_dep = b.dependency("spng", .{
         .target = target,
         .optimize = optimize,
@@ -50,7 +34,6 @@ pub fn build(b: *std.Build) void {
     translate_c.addIncludePath(spng.getEmittedIncludeTree());
     const c_module = translate_c.createModule();
 
-    // 'libcvvdp.a' static lib
     const cvvdp = b.addLibrary(.{
         .name = "cvvdp",
         .use_lld = if (flto) true else null,
@@ -80,8 +63,6 @@ pub fn build(b: *std.Build) void {
     });
 
     if (target_result.cpu.arch == .x86_64) {
-        // Compile the SIMD object with its own CPU features. Zig's target
-        // configuration takes precedence over per-file -mavx2/-mfma flags.
         var avx2_query = target.query;
         avx2_query.cpu_features_sub.removeFeature(@backingInt(std.Target.x86.Feature.avx2));
         avx2_query.cpu_features_sub.removeFeature(@backingInt(std.Target.x86.Feature.fma));
@@ -115,10 +96,8 @@ pub fn build(b: *std.Build) void {
     cvvdp.lto = if (flto) .full else null;
     b.installArtifact(cvvdp);
 
-    // cvvdp.h
     cvvdp.installHeader(b.path("src/cvvdp.h"), "cvvdp.h");
 
-    // 'fcvvdp' executable
     const cvvdpenc = b.addExecutable(.{
         .name = "fcvvdp",
         .root_module = b.createModule(.{
