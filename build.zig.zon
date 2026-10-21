@@ -1,23 +1,23 @@
 .{
     .name = .fcvvdp,
-    .version = "0.4.0",
+    .version = "0.4.1",
     .dependencies = .{
         .spng = .{
-            .url = "git+https://github.com/allyourcodebase/libspng.git#8858232bde47083739c3e25f676093423610ec5e",
-            .hash = "spng-0.0.1-T166cP8UAABcBGTOPKx7kUUyHEcu0eDvN8LnSIj3S_cW",
+            .url = "git+https://github.com/gianni-rosato/libspng.git#c459a577fe818f4dfdb3ceaea46b702bd8c9d118",
+            .hash = "spng-0.0.2-T166cHISAADR33WgZ6IfHBVOPj0gwjyqnxYxc-XTWF8Z",
         },
         .simpleimgio = .{
-            .url = "git+https://github.com/gianni-rosato/simpleimgio.git#98031ca5c7487fdc9d57f97184f3bd6044b3ab07",
-            .hash = "simpleimgio-0.0.1-oHTuOdP9AADRXI8TEcZr6hNxRYS-OH3ZoYMAS-jxxe5H",
+            .url = "git+https://github.com/gianni-rosato/simpleimgio.git#98473d19f243eefd4ef29a2149af47bc072c2484",
+            .hash = "simpleimgio-0.0.1-oHTuOfMbAQBWcIe2wQBOoIIrItr8a-kBVowFbAaZkwXy",
         },
     },
     .fingerprint = 0xfe41744458a5e60e,
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.0",
     .paths = .{
         "build.zig",
         "build.zig.zon",
+        "c_imports.h",
         "src",
-        "third-party",
         "LICENSE",
         "README.md",
     },
