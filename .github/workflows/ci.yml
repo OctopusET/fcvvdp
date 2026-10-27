@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  style:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Trailing whitespace
+        run: "! git grep -nI -E '[[:space:]]+$' -- ':!patches/'"
+      - name: Tabs
+        run: "! git grep -nI -P '\\t' -- '*.c' '*.h' '*.zig' '*.zon' '*.md' '*.asm' '*.S'"
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04, ubuntu-26.04-arm, macos-26, macos-26-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: mlugg/setup-zig@v2
+      - name: Fetch dependencies
+        run: for _ in 1 2 3; do zig build --fetch=all && exit 0; sleep 15; done; exit 1
+      - run: zig build
+      - run: zig build --release=fast
+      - if: runner.os == 'Linux'
+        run: zig build --release=fast -Dflto=true
+
+  build-cross:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-freebsd, aarch64-freebsd]
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: mlugg/setup-zig@v2
+      - name: Fetch dependencies
+        run: for _ in 1 2 3; do zig build --fetch=all && exit 0; sleep 15; done; exit 1
+      - run: zig build -Dtarget=${{ matrix.target }}
+
+  test-checkasm:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04, ubuntu-26.04-arm, macos-26, macos-26-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: mlugg/setup-zig@v2
+      - name: Fetch dependencies
+        run: for _ in 1 2 3; do zig build --fetch=all && exit 0; sleep 15; done; exit 1
+      - run: zig build -Dcheckasm checkasm -- --repeat=50
+      - if: runner.arch == 'X64'
+        run: zig build -Dcheckasm -Dcpu=baseline checkasm -- --repeat=50
+      - run: zig build -Dcheckasm --release=fast checkasm -- --bench
+
+  test-illegal-instructions:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: mlugg/setup-zig@v2
+      - name: Fetch dependencies
+        run: for _ in 1 2 3; do zig build --fetch=all && exit 0; sleep 15; done; exit 1
+      - run: sudo apt-get update && sudo apt-get install -y qemu-user
+      # static so that the runner's x86-64-v3 libc does not run on the emulated CPUs
+      - run: zig build -Dcheckasm -Dtarget=x86_64-linux-musl -Dcpu=baseline --release=fast
+      - name: Generate images
+        run: |
+          for f in ref dis; do
+            printf 'P6\n67 41\n255\n' > $f.ppm
+            head -c 8241 /dev/urandom >> $f.ppm
+          done
+      - name: Run on CPUs without and with AVX2
+        run: |
+          for cpu in Penryn Haswell-noTSX; do
+            qemu-x86_64 -cpu $cpu zig-out/bin/checkasm
+            qemu-x86_64 -cpu $cpu zig-out/bin/fcvvdp ref.ppm dis.ppm
+          done
