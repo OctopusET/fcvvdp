@@ -161,6 +161,7 @@ pub fn build(b: *std.Build) void {
             .files = &.{
                 "tests/checkasm/checkasm.c",
                 "tests/checkasm/color.c",
+                "tests/checkasm/pyramid.c",
                 "tests/checkasm/temporal.c",
             },
             .flags = &.{ "-std=c23", "-Wall", "-Wextra", "-Wno-missing-field-initializers" },

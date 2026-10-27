@@ -22,6 +22,7 @@
 static const CheckasmTest tests[] = {
     { "color", checkasm_check_color },
     { "temporal", checkasm_check_temporal },
+    { "pyramid", checkasm_check_pyramid },
     { 0 }
 };
 
