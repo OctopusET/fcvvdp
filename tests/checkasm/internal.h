@@ -25,6 +25,7 @@
 #include "src/internal.h"
 
 void checkasm_check_color(void);
+void checkasm_check_temporal(void);
 
 // SIMD paths use FMA and a different summation order, so outputs are not
 // bitexact; eps covers results near zero where ULP distance is meaningless.
