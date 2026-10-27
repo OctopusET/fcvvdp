@@ -47,6 +47,7 @@ pub fn build(b: *std.Build) void {
     const cvvdp_sources = [_][]const u8{
         "src/cvvdp.c",
         "src/cvvdp_c.c",
+        "src/cpu.c",
     };
     const cvvdp_flags = [_][]const u8{
         "-std=c23",
