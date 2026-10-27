@@ -162,6 +162,7 @@ pub fn build(b: *std.Build) void {
                 "tests/checkasm/checkasm.c",
                 "tests/checkasm/color.c",
                 "tests/checkasm/contrast.c",
+                "tests/checkasm/masking.c",
                 "tests/checkasm/pyramid.c",
                 "tests/checkasm/temporal.c",
             },
